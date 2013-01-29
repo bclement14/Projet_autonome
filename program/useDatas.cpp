@@ -22,6 +22,10 @@
 using namespace std;
 using namespace Rhoban;
 
+void ssFirstPos(Motors * motors, const string &motorName, const double initPos, const double goalPos, const int pourcentage);
+void goToFirstPos(Motors * motors, double posEpauleLong, double posEpauleLat, double posEpauleRot, 
+		  double coude, double coudeRot, double poignetLong, double poignetLat, 
+		  const double duration);
 int main(int argc, char **argv)
 {
   try
@@ -62,6 +66,16 @@ int main(int argc, char **argv)
 	    robots.stop();
 	    return 1;
 	  }
+	//On lit les premieres valeurs pour initialiser le moteur
+	cout << "Now motors are going to position 1 of file" << endl;
+	fichier >> loop;
+	double posEpauleLong, posEpauleLat, posEpauleRot, posCoude, posCoudeRot, posPoignetLong, posPoignetLat;
+	fichier >> posEpauleLong >> posEpauleLat >> posEpauleRot >> posCoude >> posCoudeRot >> posPoignetLong >> posPoignetLat;
+	syst_wait_ms(3000);
+	goToFirstPos(motors, posEpauleLong, posEpauleLat, posEpauleRot, posCoude, posCoudeRot, posPoignetLong, posPoignetLat,5);
+
+	cout << "Reading sequence" << endl;
+	timeOut = false;
 	double valeur = 0;
 	while (!timeOut)
 	  {
@@ -90,7 +104,7 @@ int main(int argc, char **argv)
 	      }
 	      fichier.close();
 	
-	cout << "Putting all motors compliant " << endl;
+	cout << "End of movement. Putting all motors compliant " << endl;
 	robot->allCompliant();
 	syst_wait_ms(1000);
 	//robot->emergency();
@@ -104,4 +118,60 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+}
+
+void goToFirstPos(Motors * motors, double posEpauleLong, double posEpauleLat, double posEpauleRot, 
+		  double posCoude, double posCoudeRot, double posPoignetLong, double posPoignetLat, 
+		  const double duration)
+{
+  double initEpauleLong = (*motors)["GEpauleLong"]->getCurrentAngle(),
+    initEpauleLat = (*motors)["GEpauleLat"]->getCurrentAngle(),
+    initEpauleRot = (*motors)["GEpauleRot"]->getCurrentAngle(),
+    initCoude = (*motors)["GCoude"]->getCurrentAngle(), 
+    initCoudeRot = (*motors)["GCoudeRot"]->getCurrentAngle(),
+    initPoignetLong = (*motors)["GPoignetLong"]->getCurrentAngle(),
+    initPoignetLat = (*motors)["GPoignetLat"]->getCurrentAngle();
+  for (int i=1; i<=100; i++)
+    {
+      //EpauleLong
+      ssFirstPos(motors, "GEpauleLong", initEpauleLong, posEpauleLong, i);
+      //EpauleLat
+      ssFirstPos(motors, "GEpauleLat", initEpauleLat, posEpauleLat, i);
+      //EpauleRot
+      ssFirstPos(motors, "GEpauleRot", initEpauleRot, posEpauleRot, i);
+      //Coude
+      ssFirstPos(motors, "GCoude", initCoude, posCoude, i);
+      //CoudeRot
+      ssFirstPos(motors, "GCoudeRot", initCoudeRot, posCoudeRot, i);
+      //PoignetLong
+      ssFirstPos(motors, "GPoignetLong", initPoignetLong, posPoignetLong, i);
+      //PoignetLat
+      ssFirstPos(motors, "GPoignetLat", initPoignetLat, posPoignetLat, i);
+      syst_wait_ms(30);
+    }
+}
+
+void ssFirstPos(Motors * motors, const string &motorName, const double initPos, const double goalPos, const int pourcentage)
+{
+  /*bool posOk = true;
+  double valeur = (*motors)[motorName.c_str()]->getCurrentAngle();
+  cout << motorName.c_str() << " : currentAngle = " << valeur << " goal = " << posMotor << " ";
+  if (valeur-posMotor>1)
+    {
+      posOk = false;
+      (*motors)[motorName.c_str()]->setGoalAngle(valeur-1);
+      cout << motorName.c_str() << " : pos--" << endl;
+    }
+  else if (valeur-posMotor<-1)
+    {
+      posOk = false;
+      (*motors)[motorName.c_str()]->setGoalAngle(valeur+1);
+      cout << motorName.c_str() << " : pos++" << endl;
+    }
+  else
+    (*motors)[motorName.c_str()]->setGoalAngle(posMotor);
+    return posOk;*/
+  double currentPos = (initPos*(100-pourcentage) + goalPos*pourcentage) / 100;
+  cout << motorName.c_str() << " : currentPos = " << currentPos << " goal = " << goalPos << " ";
+  (*motors)[motorName.c_str()]->setGoalAngle(currentPos);
 }
