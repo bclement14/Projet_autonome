@@ -23,7 +23,7 @@ using namespace std;
 using namespace Rhoban;
 
 void getDatas(Robot * robot, Motors * motors, const string & fileName, const int nbLoop);
-void useDatas(Robot * robot, Motors * motors, const string & filename);
+void useDatas(Robot * robot, Motors * motors, const string & fileName);
 
 void ssFirstPos(Motors * motors, const string &motorName, const double initPos, const double goalPos, const int pourcentage);
 void goToFirstPos(Motors * motors, double posEpauleLong, double posEpauleLat, double posEpauleRot, 
@@ -65,15 +65,17 @@ int main(int argc, char **argv)
       syst_wait_ms(1000);
       cout << "Initialization OK" << endl;
 
-      if (argv[1] == "GET")
+cout << "DEBUG : Coucou " << argv[1] << endl;      
+if (strcmp(argv[1],"GET") == 0)
 	{ //Demande d'acquisition
+cout << "DEBUG : Coucou" << endl;
 	  if (argc != 5)
 	    {
 	      cout << "Erreur : nombre d'arguments de GET invalide." << endl;
 	      return 1;
 	    }
 	  fileName = argv[2];
-	  if (fileExpr == "")
+	  if (fileName == "")
 	    {
 	      cout << "Error reading filename argument (arg2)" << endl;
 	      return 1;
@@ -96,7 +98,7 @@ int main(int argc, char **argv)
 	      getDatas(robot, motors, fileNameExp, nbLoop);
 	    }
 	}
-      else if (argv[1] == "USE")
+      else if (strcmp(argv[1],"USE") == 0)
 	{ //Demande d'execution
 	  fileName = argv[2];
 	  if (fileName == "")
@@ -177,68 +179,65 @@ void getDatas(Robot * robot, Motors * motors, const string & fileName, const int
 	fichier.close();
 }
 
-void useDatas(Robot * robot, Motors * motors, const string & filename)
+void useDatas(Robot * robot, Motors * motors, const string & fileName)
 {
-  try
+  cout << "Now motors are going to their initial position " << endl;
+  motors->goToInit();
+  //robot->motors["GEpauleLong"].setLoad(1.0);
+  
+  cout << "Applying results from " << fileName << " during 7.5 sec" << endl;
+  
+  bool timeOut = false; int loop = 0;
+  ifstream fichier(fileName.c_str(), ios::in);  // ouverture en lecture
+  
+  if(!fichier)
     {
-      cout << "Now motors are going to their initial position " << endl;
-	motors->goToInit();
-	//robot->motors["GEpauleLong"].setLoad(1.0);
-
-	cout << "Applying results from " << fileName << " during 7.5 sec" << endl;
-
-	bool timeOut = false; int loop = 0;
-	ifstream fichier(fileName.c_str(), ios::in);  // ouverture en lecture
-
-	if(!fichier)
-	  {
-	    cout << "Opening file " << fileName << " failure. Stopping !";
-	    robot->allCompliant();
-	    robots.stop();
-	    return 1;
-	  }
-	//On lit les premieres valeurs pour initialiser le moteur
-	cout << "Now motors are going to position 1 of file" << endl;
-	fichier >> loop;
-	double posEpauleLong, posEpauleLat, posEpauleRot, posCoude, posCoudeRot, posPoignetLong, posPoignetLat;
-	fichier >> posEpauleLong >> posEpauleLat >> posEpauleRot >> posCoude >> posCoudeRot >> posPoignetLong >> posPoignetLat;
-	syst_wait_ms(3000);
-	goToFirstPos(motors, posEpauleLong, posEpauleLat, posEpauleRot, posCoude, posCoudeRot, posPoignetLong, posPoignetLat,5);
-
-	cout << "Reading sequence" << endl;
-	timeOut = false;
-	double valeur = 0;
-	while (!timeOut)
-	  {
-	    fichier >> loop;
-	    cout << loop << "/250 " << endl;
-	    fichier >> valeur; 
-	    //cout << "GEpauleLong : " << valeur << endl;
-	    (*motors)["GEpauleLong"]->setGoalAngle(valeur);
-	    fichier >> valeur;
-	    (*motors)["GEpauleLat"]->setGoalAngle(valeur);
-	    fichier >> valeur;
-	    (*motors)["GEpauleRot"]->setGoalAngle(valeur);
-	    fichier >> valeur;
-	    //cout << "GCoude : " << valeur << endl; 
-	    (*motors)["GCoude"]->setGoalAngle(valeur);
-	    fichier >> valeur;
-	    (*motors)["GCoudeRot"]->setGoalAngle(valeur);
-	    fichier >> valeur;
-	    (*motors)["GPoignetLong"]->setGoalAngle(valeur);
-	    fichier >> valeur;
-	    (*motors)["GPoignetLat"]->setGoalAngle(valeur); 
-	    syst_wait_ms(30);
-	    loop++;
-	    if (loop > 250)
-	      timeOut = true;
-	  }
-	fichier.close();
-	
-	cout << "End of movement. Putting all motors compliant " << endl;
-	robot->allCompliant();
-	syst_wait_ms(1000);
-	//robot->emergency();
+      cout << "Opening file " << fileName << " failure. Stopping !";
+      robot->allCompliant();
+      return;
+    }
+  //On lit les premieres valeurs pour initialiser le moteur
+  cout << "Now motors are going to position 1 of file" << endl;
+  fichier >> loop;
+  double posEpauleLong, posEpauleLat, posEpauleRot, posCoude, posCoudeRot, posPoignetLong, posPoignetLat;
+  fichier >> posEpauleLong >> posEpauleLat >> posEpauleRot >> posCoude >> posCoudeRot >> posPoignetLong >> posPoignetLat;
+  syst_wait_ms(3000);
+  goToFirstPos(motors, posEpauleLong, posEpauleLat, posEpauleRot, posCoude, posCoudeRot, posPoignetLong, posPoignetLat,5);
+  
+  cout << "Reading sequence" << endl;
+  timeOut = false;
+  double valeur = 0;
+  while (!timeOut)
+    {
+      fichier >> loop;
+      cout << loop << "/250 " << endl;
+      fichier >> valeur; 
+      //cout << "GEpauleLong : " << valeur << endl;
+      (*motors)["GEpauleLong"]->setGoalAngle(valeur);
+      fichier >> valeur;
+      (*motors)["GEpauleLat"]->setGoalAngle(valeur);
+      fichier >> valeur;
+      (*motors)["GEpauleRot"]->setGoalAngle(valeur);
+      fichier >> valeur;
+      //cout << "GCoude : " << valeur << endl; 
+      (*motors)["GCoude"]->setGoalAngle(valeur);
+      fichier >> valeur;
+      (*motors)["GCoudeRot"]->setGoalAngle(valeur);
+      fichier >> valeur;
+      (*motors)["GPoignetLong"]->setGoalAngle(valeur);
+      fichier >> valeur;
+      (*motors)["GPoignetLat"]->setGoalAngle(valeur); 
+      syst_wait_ms(30);
+      loop++;
+      if (loop > 250)
+	timeOut = true;
+    }
+  fichier.close();
+  
+  cout << "End of movement. Putting all motors compliant " << endl;
+  robot->allCompliant();
+  syst_wait_ms(1000);
+  //robot->emergency();
 }
 
 void goToFirstPos(Motors * motors, double posEpauleLong, double posEpauleLat, double posEpauleRot, 
